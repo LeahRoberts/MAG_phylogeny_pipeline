@@ -1,0 +1,59 @@
+"""
+Pipeline to create lineage phylogenies from high-quality MAGs
+Treating the MAGs as isolates
+"""
+
+configfile: "config.yaml"
+
+rule all:
+    input: f"{config['output_dir']}/MAG.final_tree.tre"
+
+
+rule make_list_file:
+    input:
+        genomes_dir = f"{config['genomes']}",
+        output_dir = f"{config['output_dir']}/"
+    output:
+        f"{config['output_dir']}/fofn.txt"
+    script: "scripts/fofn.py"
+
+
+rule ska:
+    input:
+        ref_genome = f"{config['reference_genome']}",
+        all_genomes = f"{config['output_dir']}/fofn.txt"
+    output:
+        f"{config['output_dir']}/ska_alignment.msa"
+    conda:
+        "ska"
+    threads: 16
+    params:
+        threads = 16
+    shell:
+        """
+        generate_ska_alignment.py --reference {input.ref_genome} --fasta {input.all_genomes} --out {output} --threads \
+        {params.threads}
+        """
+
+
+rule gubbins_iqtree:
+    input:
+        alignment_fasta = f"{config['output_dir']}/ska_alignment.msa",
+        outputdir = f"{config['output_dir']}/"
+    output:
+        final_tree = f"{config['output_dir']}/MAG.final_tree.tre"
+    threads: 16
+    conda:
+        "gubbins3.3"
+    params:
+        prefix = "MAG",
+        threads = 16,
+        bootstrap = 100
+    shell:
+        """
+        cd {input.outputdir}
+        run_gubbins.py --threads {params.threads} --prefix {params.prefix} --tree-builder iqtree --bootstrap {params.boostrap} \
+          --first-model GTRGAMMA --best-model  {input.alignment_fasta}
+        """
+
+

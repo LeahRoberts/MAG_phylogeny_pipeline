@@ -1,0 +1,5 @@
+reference_genome="/selected/reference/genome/for/alignment"
+
+genomes="/path/to/lineage/genomes"
+
+output_dir="path/to/output/dir"

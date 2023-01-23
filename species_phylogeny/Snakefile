@@ -1,0 +1,83 @@
+"""
+Pipeline to generate species phylogeny and determine BAPs clusters
+"""
+
+configfile: "config.yaml"
+
+rule all:
+    input:
+        species_phylogeny = f"{config['output_dir']}/gtdb_infer/gtdbtk.unrooted.tree",
+        baps_clusters = f"{config['output_dir']}/fastbaps/fastbaps_clusters.csv"
+
+
+rule gtdb_identify:
+    input:
+        genome_dir = f"{config['genome_dir']}"
+    output:
+        output_dir = f"{config['output_dir']}/gtdb_identify/"
+    threads: 10
+    conda:
+        "gtdbtk_v2"
+    params:
+        extension = "fasta",
+        cpus = 10
+    shell:
+        """
+        gtdbtk identify --genome_dir {input.genome_dir} --out_dir {output.output_dir} --extension {params.extension} \
+        --cpus {params.cpus} --force 
+        """
+
+
+rule gtdb_align:
+    input:
+        f"{config['output_dir']}/gtdb_identify/"
+    output:
+        output_dir = f"{config['output_dir']}/gtdb_align/",
+        alignment = f"{config['output_dir']}/gtdb_align/align/gtdbtk.bac120.user_msa.fasta.gz"
+    threads: 10
+    conda:
+        "gtdbtk_v2"
+    params:
+        cpus = 10
+    shell:
+        """
+        gtdbtk align --identify_dir {input} --skip_gtdb_refs --out_dir {output.output_dir}
+        """
+
+
+rule gtdb_infer:
+    input:
+        f"{config['output_dir']}/gtdb_align/align/gtdbtk.bac120.user_msa.fasta.gz"
+    output:
+        output_dir = f"{config['output_dir']}/gtdb_infer/",
+        output_tree = f"{config['output_dir']}/gtdb_infer/gtdbtk.unrooted.tree"
+    threads: 10
+    conda:
+        "gtdbtk_v2"
+    params:
+        cpus = 10
+    shell:
+        """
+        gtdbtk infer --msa_file {input} --outdir {output.output_dir} --gamma --cpus {params.cpus}
+        """
+
+
+rule baps:
+    input:
+        alignment = f"{config['output_dir']}/gtdb_align/align/gtdbtk.bac120.user_msa.fasta.gz",
+        phylogeny = f"{config['output_dir']}/gtdb_infer/gtdbtk.unrooted.tree"
+    output:
+        output = f"{config['output_dir']}/fastbaps/fastbaps_clusters.csv"
+    threads: 16
+    params:
+        threads = 16,
+        prior = "symmetric",
+        levels = 2
+    conda:
+        "fastbaps"
+    shell:
+        """
+        run_fastbaps -i {input.alignment} --phylogeny {input.phylogeny} -t 16 -p {params.prior} \
+        -l {params.levels} -o {output.output}
+        """
+
