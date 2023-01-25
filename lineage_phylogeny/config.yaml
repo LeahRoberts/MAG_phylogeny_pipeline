@@ -1,5 +1,3 @@
-reference_genome="/selected/reference/genome/for/alignment"
-
-genomes="/path/to/lineage/genomes"
-
-output_dir="path/to/output/dir"
+reference_genome: /hps/nobackup/iqbal/lroberts/microbial_ecosystems/MAG_phylogeny_pipeline/lineage_phylogeny/test_genomes/SAMD00055754.contigs.fa
+genomes: /hps/nobackup/iqbal/lroberts/microbial_ecosystems/MAG_phylogeny_pipeline/lineage_phylogeny/test_genomes
+output_dir: /hps/nobackup/iqbal/lroberts/microbial_ecosystems/MAG_phylogeny_pipeline/lineage_phylogeny/test_output

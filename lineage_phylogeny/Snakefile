@@ -12,10 +12,13 @@ rule all:
 rule make_list_file:
     input:
         genomes_dir = f"{config['genomes']}",
-        output_dir = f"{config['output_dir']}/"
+        script = "scripts/fofn.py"
     output:
-        f"{config['output_dir']}/fofn.txt"
-    script: "scripts/fofn.py"
+        output_file = f"{config['output_dir']}/fofn.txt"
+    params:
+        extension = ".fa"
+    shell: 
+        "python {input.script} {input.genomes_dir} {params.extension} {output.output_file}"
 
 
 rule ska:
@@ -25,34 +28,35 @@ rule ska:
     output:
         f"{config['output_dir']}/ska_alignment.msa"
     conda:
-        "ska"
-    threads: 16
-    params:
-        threads = 16
+        "gubbins3.3"
+    threads: 4
+    resources:
+        mem_mb=5000
     shell:
         """
         generate_ska_alignment.py --reference {input.ref_genome} --fasta {input.all_genomes} --out {output} --threads \
-        {params.threads}
+        {threads}
         """
 
 
 rule gubbins_iqtree:
     input:
         alignment_fasta = f"{config['output_dir']}/ska_alignment.msa",
-        outputdir = f"{config['output_dir']}/"
+        outputdir = f"{config['output_dir']}"
     output:
         final_tree = f"{config['output_dir']}/MAG.final_tree.tre"
     threads: 16
+    resources:
+        mem_mb=lambda wildcards, attempt: 16000 * attempt
     conda:
         "gubbins3.3"
     params:
         prefix = "MAG",
-        threads = 16,
-        bootstrap = 100
+        bootstrap = 1000
     shell:
         """
         cd {input.outputdir}
-        run_gubbins.py --threads {params.threads} --prefix {params.prefix} --tree-builder iqtree --bootstrap {params.boostrap} \
+        run_gubbins.py --threads {threads} --prefix {params.prefix} --tree-builder iqtree --bootstrap {params.bootstrap} \
           --first-model GTRGAMMA --best-model  {input.alignment_fasta}
         """
 
