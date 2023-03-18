@@ -4,7 +4,7 @@ set -eux
 MEMORY=4000
 PROFILE="lsf"
 LOG_DIR=logs/
-JOB_NAME="snakemake_MAG_phylogeny."$(date --iso-8601='minutes')
+JOB_NAME="snakemake_MAG_speciesphy."$(date --iso-8601='minutes')
 
 mkdir -p $LOG_DIR
 
